@@ -60,7 +60,7 @@ def test_with_prefixed_writes_denied_by_sqlite(sql):
 
 
 def test_connection_itself_is_read_only():
-    conn = sqlite3.connect(f"file:{db.DB_PATH.as_posix()}?mode=ro", uri=True)
+    conn = sqlite3.connect(db.DB_PATH.resolve().as_uri() + "?mode=ro", uri=True)
     with pytest.raises(sqlite3.OperationalError):
         conn.execute("DELETE FROM books")
 

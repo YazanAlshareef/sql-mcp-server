@@ -4,7 +4,7 @@ from mcp.server.fastmcp import FastMCP
 import db
 from sql_guard import RejectedQuery
 
-mcp = FastMCP("bookstore-sql")
+mcp = FastMCP("bookstore-sql", log_level="WARNING")
 
 # Revenue only counts completed orders, in cents, shown as dollars.
 _REVENUE = "SUM(oi.quantity * oi.unit_price_cents) / 100.0"

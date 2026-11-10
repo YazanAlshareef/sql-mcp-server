@@ -36,7 +36,7 @@ def _authorizer(action, arg1, *_):
 
 def connect() -> sqlite3.Connection:
     # mode=ro: SQLite itself refuses writes, even if the guard had a bug.
-    conn = sqlite3.connect(f"file:{DB_PATH.as_posix()}?mode=ro", uri=True)
+    conn = sqlite3.connect(DB_PATH.resolve().as_uri() + "?mode=ro", uri=True)
     conn.row_factory = sqlite3.Row
     conn.set_authorizer(_authorizer)
     return conn
@@ -86,4 +86,9 @@ def describe_table(name: str) -> dict:
         (name,), limit=MAX_ROWS,
     )
     count = run_select(f'SELECT COUNT(*) FROM "{name}"')["rows"][0][0]
-    return {"table": name, "row_count": count, "columns": cols["rows"], "foreign_keys": fks["rows"]}
+    return {
+        "table": name,
+        "row_count": count,
+        "columns": [dict(zip(cols["columns"], r)) for r in cols["rows"]],
+        "foreign_keys": [dict(zip(fks["columns"], r)) for r in fks["rows"]],
+    }

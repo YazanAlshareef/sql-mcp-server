@@ -1,0 +1,50 @@
+tools: ['list_tables', 'describe_table', 'run_select', 'monthly_sales', 'top_books', 'low_stock', 'top_customers']
+resources: ['schema://bookstore']
+prompts: ['analyze_sales_by_month']
+
+=== list_tables
+authors | books | categories | customers | inventory_movements | order_items | orders | suppliers
+
+=== describe_table(books)
+{ "table": "books", "row_count": 160, "columns": [ { "name": "book_id", "type": "INTEGER", "not_null": 0, "pk": 1 }, { "name": "isbn", "type": "TEXT", "not_null": 1, "pk": 0 }, { "name": "title", "type": "TEXT", "not_null": 1, "pk": 0 }, { "name": "author_id", "type": "INTEGER", "not_null": 1, "pk": 0 }, { "name": "category_id", "type": "INTEGER", "not_null": 1, "pk": 0 }, { "name": "list_price_cents", "type": "INTEGER", "not_null": 1, "pk": 0 }, { "name": "published_year", "type": "INTEGER", "n ...
+
+=== run_select
+{ "columns": [ "title", "list_price_cents" ], "rows": [ [ "The Long Mirror", 3899 ], [ "The Distant Letter", 3899 ], [ "The Distant Kitchen", 3799 ] ], "row_count": 3, "truncated": true }
+
+=== monthly_sales(2025)
+{ "columns": [ "month", "orders", "revenue" ], "rows": [ [ "2025-01", 56, 2613.32 ], [ "2025-02", 45, 2130.85 ], [ "2025-03", 78, 3362.51 ], [ "2025-04", 69, 3054.82 ], [ "2025-05", 91, 4213.39 ], [ "2025-06", 102, 4135.09 ], [ "2025-07", 126, 5283.63 ], [ "2025-08", 90, 4291.86 ], [ "2025-09", 92, 4159.17 ], [ "2025-10", 130, 5372.63 ], [ "2025-11", 207, 9849.17 ], [ "2025-12", 233, 10095.46 ] ], "row_count": 12, "truncated": false }
+
+=== top_books(3)
+{ "columns": [ "title", "author", "units", "revenue" ], "rows": [ [ "The Last River", "Ava Patel", 320, 7578.4 ], [ "The Lost River", "Amir Garcia", 146, 5168.14 ], [ "The Hidden Orchard", "Liam Cohen", 196, 4634.84 ] ], "row_count": 3, "truncated": true }
+
+=== low_stock(3)
+{ "columns": [ "title", "stock" ], "rows": [ [ "The Hidden Atlas", 3 ], [ "The Long Mirror", 3 ], [ "The Lost Letter", 3 ], [ "The Salt River", 3 ] ], "row_count": 4, "truncated": false }
+
+=== top_customers(3)
+{ "columns": [ "customer", "city", "orders", "spent" ], "rows": [ [ "Omar Kim", "Geelong", 43, 2249.9 ], [ "Yuki Park", "Melbourne", 42, 1955.49 ], [ "Isla Fox", "Melbourne", 42, 1919.2 ] ], "row_count": 3, "truncated": true }
+
+--- attacks (each must be an error) ---
+
+=== run_select('DROP TABLE books')
+ERROR: Error executing tool run_select: only SELECT queries are allowed
+
+=== run_select('SELECT 1; DELETE FROM books')
+ERROR: Error executing tool run_select: only one statement is allowed
+
+=== run_select("ATTACH 'x.db' AS x")
+ERROR: Error executing tool run_select: only SELECT queries are allowed
+
+=== run_select('PRAGMA user_version = 9')
+ERROR: Error executing tool run_select: only SELECT queries are allowed
+
+=== resource schema://bookstore (first 200 chars)
+CREATE TABLE authors (
+    author_id   INTEGER PRIMARY KEY,
+    name        TEXT NOT NULL UNIQUE CHECK (length(trim(name)) > 0)
+) STRICT;
+
+CREATE TABLE books (
+    book_id          INTEGER PRIMARY KEY
+
+=== prompt analyze_sales_by_month
+Analyze sales by month for 2025. First call the monthly_sales tool with year=2025. Then report: the best and worst month, the month-to-month trend, and any month that looks unusual. If you need detail, use run_select. Say which numbers come from the tool and do not guess values you did not retrieve. Revenue counts completed orders only.
