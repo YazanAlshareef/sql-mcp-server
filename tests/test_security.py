@@ -100,3 +100,9 @@ def test_timeout():
 def test_describe_table_rejects_injection():
     with pytest.raises(ValueError):
         db.describe_table('books"; DROP TABLE books; --')
+
+
+@pytest.mark.parametrize("sql", ["SELECT zeroblob(1000000000)", "SELECT length(randomblob(1000000000))", "SELECT ZEROBLOB(5)"])
+def test_memory_blowup_functions_denied(sql):
+    with pytest.raises(sqlite3.DatabaseError):
+        db.run_select(sql)

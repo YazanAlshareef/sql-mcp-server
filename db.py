@@ -26,7 +26,13 @@ _ALLOWED = {
 _SAFE_PRAGMAS = {"table_info", "foreign_key_list"}
 
 
-def _authorizer(action, arg1, *_):
+# Can allocate huge values in one call (memory blow-up before the timeout fires).
+_DENIED_FUNCTIONS = {"randomblob", "zeroblob"}
+
+
+def _authorizer(action, arg1, arg2, *_):
+    if action == sqlite3.SQLITE_FUNCTION and (arg2 or "").lower() in _DENIED_FUNCTIONS:
+        return sqlite3.SQLITE_DENY
     if action in _ALLOWED:
         return sqlite3.SQLITE_OK
     if action == sqlite3.SQLITE_PRAGMA and arg1 in _SAFE_PRAGMAS:
@@ -40,6 +46,11 @@ def connect() -> sqlite3.Connection:
     conn.row_factory = sqlite3.Row
     conn.set_authorizer(_authorizer)
     return conn
+
+
+def _plain(v):
+    """BLOBs come back as bytes, which JSON cannot encode. Show their size instead."""
+    return f"<blob {len(v)} bytes>" if isinstance(v, (bytes, bytearray)) else v
 
 
 def run_select(sql: str, params=(), limit: int = DEFAULT_ROWS, timeout: float = TIMEOUT_SECONDS) -> dict:
@@ -57,7 +68,7 @@ def run_select(sql: str, params=(), limit: int = DEFAULT_ROWS, timeout: float = 
         truncated = len(rows) > limit
         return {
             "columns": columns,
-            "rows": [list(r) for r in rows[:limit]],
+            "rows": [[_plain(v) for v in r] for r in rows[:limit]],
             "row_count": min(len(rows), limit),
             "truncated": truncated,
         }
