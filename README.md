@@ -22,7 +22,7 @@ Revenue counts `completed` orders only: `quantity * unit_price_cents`, shown in 
 
 ## Why Python
 
-I used the official Python SDK (`mcp`, its `FastMCP` helper). SQLite support is in the standard library (`sqlite3`), so the only dependency is the SDK, and my other portfolio projects are Python too. The SDK docs (v1.30) were checked before writing code.
+I used the official Python SDK (`mcp`, its `FastMCP` helper). SQLite support is in the standard library (`sqlite3`), so the only dependency is the SDK, and my other portfolio projects are Python too. It is built against `mcp` 1.30 (`requirements.txt` allows 1.30 up to, but not including, 2).
 
 ## How it stays read-only
 
@@ -32,13 +32,15 @@ Three independent layers, so one bug is not enough:
 2. The database is opened with SQLite `mode=ro`. SQLite itself refuses writes.
 3. A SQLite authorizer allows only select/read/function actions. `INSERT`, `DELETE`, `ATTACH`, `PRAGMA`, etc. are denied even if they get past layer 1 (for example `WITH x AS (...) DELETE ...`).
 
+`randomblob` and `zeroblob` are also denied (they can allocate huge values in one call). BLOB values in results are shown as `<blob N bytes>` so they can be sent as JSON.
+
 Plus a row cap (500 max, 100 default) and a 5 second timeout via a progress handler.
 
 ## How to run
 
 ```bash
 pip install -r requirements.txt
-python -m pytest -q            # 30 security and behaviour tests
+python -m pytest -q            # 37 security and behaviour tests
 python scripts/test_client.py  # starts the server over stdio and calls everything
 ```
 
@@ -69,7 +71,7 @@ An AI coding assistant wrote the first draft of the code and tests from my brief
 
 - **`describe_table` was denied by the authorizer.** `pragma_table_info(...)` counts as a `PRAGMA` action, and I had denied all pragmas. Fix: allow only `table_info` and `foreign_key_list`; every other pragma stays denied.
 - **Tool results showed up empty in my first client script.** FastMCP only fills `structuredContent` for typed returns, and several tools return plain dicts. Fix: the client reads the text content instead.
-- **Database path in the SQLite URI.** An f-string path would break with `?` or `#` in the folder name. Fix: build the URI with `Path.as_uri()` (checked with a folder named `a b#c`).
+- **Database path in the SQLite URI.** An f-string path would break with `?` or `#` in the folder name. Fix: build the URI with `Path.as_uri()` (covered by `tests/test_db.py`, which copies the database into a folder named `a b#c`).
 
 ## Limits
 
@@ -78,7 +80,7 @@ An AI coding assistant wrote the first draft of the code and tests from my brief
 - `run_select` can read every column in the database, including the synthetic customer emails. Fine for fake data, but do not point this at a real database without adding table and column allow-lists.
 - stdio transport only. No authentication, because it runs as a local process for one user.
 - Tested with my own Python client script. I have not tested it inside a desktop MCP app yet.
-- Business-tool numbers come from the SQL in `server.py`; I have not cross-checked them against the source repo's query results.
+- `top_books` and `top_customers` are tested against the sample output of queries Q02 and Q06 in the bookstore repo (`tests/test_business.py`). `monthly_sales` and `low_stock` are not cross-checked.
 
 ## License
 
