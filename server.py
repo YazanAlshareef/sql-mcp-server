@@ -6,7 +6,7 @@ from sql_guard import RejectedQuery
 
 mcp = FastMCP("bookstore-sql", log_level="WARNING")
 
-# Revenue only counts completed orders, in cents, shown as dollars.
+# Line revenue in dollars. Each query below adds its own WHERE o.status = 'completed'.
 _REVENUE = "SUM(oi.quantity * oi.unit_price_cents) / 100.0"
 
 
@@ -47,7 +47,7 @@ def monthly_sales(year: int | None = None) -> dict:
         "GROUP BY month ORDER BY month"
     )
     y = None if year is None else str(year)
-    return db.run_select(sql, (y, y), limit=db.MAX_ROWS)
+    return _safe(db.run_select, sql, (y, y), limit=db.MAX_ROWS)
 
 
 @mcp.tool()
@@ -59,7 +59,7 @@ def top_books(limit: int = 10) -> dict:
         "JOIN books b ON b.book_id = oi.book_id JOIN authors a ON a.author_id = b.author_id "
         "WHERE o.status = 'completed' GROUP BY b.book_id ORDER BY revenue DESC"
     )
-    return db.run_select(sql, limit=limit)
+    return _safe(db.run_select, sql, limit=limit)
 
 
 @mcp.tool()
@@ -70,7 +70,7 @@ def low_stock(threshold: int = 5) -> dict:
         "JOIN inventory_movements m ON m.book_id = b.book_id "
         "GROUP BY b.book_id HAVING stock <= ? ORDER BY stock, b.title"
     )
-    return db.run_select(sql, (threshold,))
+    return _safe(db.run_select, sql, (threshold,))
 
 
 @mcp.tool()
@@ -83,7 +83,7 @@ def top_customers(limit: int = 10) -> dict:
         "JOIN order_items oi ON oi.order_id = o.order_id "
         "WHERE o.status = 'completed' GROUP BY c.customer_id ORDER BY spent DESC"
     )
-    return db.run_select(sql, limit=limit)
+    return _safe(db.run_select, sql, limit=limit)
 
 
 @mcp.resource("schema://bookstore")
