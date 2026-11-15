@@ -1,4 +1,6 @@
 """MCP server exposing a read-only view of the bookstore database (stdio)."""
+import sqlite3
+
 from mcp.server.fastmcp import FastMCP
 
 import db
@@ -16,12 +18,15 @@ def _safe(fn, *args, **kwargs):
         return fn(*args, **kwargs)
     except (RejectedQuery, ValueError, TimeoutError) as e:
         raise ValueError(str(e)) from None
+    except sqlite3.Error as e:
+        # Bad SQL, unknown table, or an action the authorizer denied.
+        raise ValueError(f"SQL error: {e}") from None
 
 
 @mcp.tool()
 def list_tables() -> list[str]:
     """List the tables in the bookstore database."""
-    return db.list_tables()
+    return _safe(db.list_tables)
 
 
 @mcp.tool()
@@ -57,7 +62,7 @@ def top_books(limit: int = 10) -> dict:
         f"SELECT b.title, a.name AS author, SUM(oi.quantity) AS units, ROUND({_REVENUE}, 2) AS revenue "
         "FROM order_items oi JOIN orders o ON o.order_id = oi.order_id "
         "JOIN books b ON b.book_id = oi.book_id JOIN authors a ON a.author_id = b.author_id "
-        "WHERE o.status = 'completed' GROUP BY b.book_id ORDER BY revenue DESC"
+        "WHERE o.status = 'completed' GROUP BY b.book_id ORDER BY revenue DESC, b.title"
     )
     return _safe(db.run_select, sql, limit=limit)
 
@@ -81,7 +86,7 @@ def top_customers(limit: int = 10) -> dict:
         f"COUNT(DISTINCT o.order_id) AS orders, ROUND({_REVENUE}, 2) AS spent "
         "FROM customers c JOIN orders o ON o.customer_id = c.customer_id "
         "JOIN order_items oi ON oi.order_id = o.order_id "
-        "WHERE o.status = 'completed' GROUP BY c.customer_id ORDER BY spent DESC"
+        "WHERE o.status = 'completed' GROUP BY c.customer_id ORDER BY spent DESC, customer"
     )
     return _safe(db.run_select, sql, limit=limit)
 

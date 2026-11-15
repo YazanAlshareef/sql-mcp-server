@@ -3,6 +3,8 @@
 import sys
 from pathlib import Path
 
+import pytest
+
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import server  # noqa: E402
 
@@ -33,3 +35,18 @@ def test_top_books_matches_q02():
 
 def test_top_customers_matches_q06():
     assert [tuple(r) for r in server.top_customers(10)["rows"]] == Q06
+
+
+def test_sqlite_errors_become_clean_messages():
+    # Unknown table and a denied action both surface as ValueError, not a raw sqlite3 error.
+    for sql in ("SELECT * FROM no_such_table", "WITH x AS (SELECT 1) DELETE FROM books"):
+        with pytest.raises(ValueError, match="SQL error"):
+            server.run_select(sql)
+
+
+def test_ties_are_ordered_by_name():
+    # Several books share the same revenue, so the order must not depend on SQLite's grouping.
+    rows = server.top_books(500)["rows"]
+    assert rows == sorted(rows, key=lambda r: (-r[3], r[0]))
+    rows = server.top_customers(500)["rows"]
+    assert rows == sorted(rows, key=lambda r: (-r[3], r[0]))
