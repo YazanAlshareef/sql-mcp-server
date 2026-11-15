@@ -106,3 +106,10 @@ def test_describe_table_rejects_injection():
 def test_memory_blowup_functions_denied(sql):
     with pytest.raises(sqlite3.DatabaseError):
         db.run_select(sql)
+
+
+def test_oversized_value_is_rejected():
+    with pytest.raises(sqlite3.DatabaseError):
+        db.run_select(
+            "WITH RECURSIVE t(s) AS (SELECT 'x' UNION ALL SELECT s||s FROM t WHERE length(s)<4000000) SELECT max(length(s)) FROM t"
+        )

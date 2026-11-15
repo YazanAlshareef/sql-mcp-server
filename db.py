@@ -10,6 +10,7 @@ DB_PATH = Path(os.environ.get("BOOKSTORE_DB", Path(__file__).parent / "data" / "
 MAX_ROWS = 500
 DEFAULT_ROWS = 100
 TIMEOUT_SECONDS = 5.0
+MAX_VALUE_BYTES = 1_000_000
 
 # Only these SQLite action codes may run. Anything else (INSERT, UPDATE,
 # DELETE, CREATE, DROP, ALTER, ATTACH, PRAGMA, TRANSACTION...) is denied.
@@ -44,6 +45,8 @@ def connect() -> sqlite3.Connection:
     # mode=ro: SQLite itself refuses writes, even if the guard had a bug.
     conn = sqlite3.connect(DB_PATH.resolve().as_uri() + "?mode=ro", uri=True)
     conn.row_factory = sqlite3.Row
+    # Caps any single string/blob so functions like printf cannot allocate hundreds of MB. Needs Python 3.11+.
+    conn.setlimit(sqlite3.SQLITE_LIMIT_LENGTH, MAX_VALUE_BYTES)
     conn.set_authorizer(_authorizer)
     return conn
 

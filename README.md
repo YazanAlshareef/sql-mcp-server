@@ -124,7 +124,7 @@ An AI coding assistant wrote the first draft of the code and tests from my brief
 ## Limits
 
 - SQLite only, with SQLite's dialect.
-- The timeout stops CPU-heavy queries, but a query can still use memory until it fires.
+- The timeout stops CPU-heavy queries, but a query can still use memory until it fires. Any single value over 1 MB is refused (needs Python 3.11+).
 - `run_select` can read every column, including the synthetic customer emails. Fine for fake data. For a real database you would need table and column allow-lists first.
 - stdio only, no authentication. It runs as a local process for one user.
 - I have only tested it with my own Python client script, not inside a desktop MCP app.
