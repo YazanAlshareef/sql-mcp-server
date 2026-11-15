@@ -20,3 +20,16 @@ def test_database_path_with_space_and_hash(tmp_path, monkeypatch):
     shutil.copy(db.DB_PATH, copy)
     monkeypatch.setattr(db, "DB_PATH", copy)
     assert "books" in db.list_tables()
+
+
+def test_list_tables_returns_more_than_default_rows(tmp_path, monkeypatch):
+    import sqlite3
+    path = tmp_path / "many.db"
+    con = sqlite3.connect(path)
+    for i in range(120):
+        con.execute(f"CREATE TABLE t{i:03d} (id INTEGER)")
+    con.commit()
+    con.close()
+    monkeypatch.setattr(db, "DB_PATH", path)
+    assert len(db.list_tables()) == 120
+    assert db.describe_table("t119")["table"] == "t119"

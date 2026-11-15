@@ -81,7 +81,7 @@ def run_select(sql: str, params=(), limit: int = DEFAULT_ROWS, timeout: float = 
 
 
 def list_tables() -> list[str]:
-    r = run_select("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name")
+    r = run_select("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name", limit=MAX_ROWS)
     return [row[0] for row in r["rows"]]
 
 
