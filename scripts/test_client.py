@@ -39,7 +39,9 @@ async def main():
             show("top_customers(3)", await s.call_tool("top_customers", {"limit": 3}))
             print("\n--- attacks (each must be an error) ---")
             for sql in ["DROP TABLE books", "SELECT 1; DELETE FROM books", "ATTACH 'x.db' AS x", "PRAGMA user_version = 9"]:
-                show(f"run_select({sql!r})", await s.call_tool("run_select", {"sql": sql}))
+                result = await s.call_tool("run_select", {"sql": sql})
+                show(f"run_select({sql!r})", result)
+                assert result.isError, f"attack was not rejected: {sql}"
 
             res = await s.read_resource("schema://bookstore")
             print("\n=== resource schema://bookstore (first 200 chars)\n" + res.contents[0].text[:200])
