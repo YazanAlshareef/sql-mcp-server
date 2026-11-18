@@ -21,6 +21,8 @@ ERROR: Error executing tool run_select: only one statement is allowed
 
 ## Quick start
 
+Requires Python 3.11 or newer (the 1 MB value cap uses `Connection.setlimit`, added in 3.11).
+
 ```bash
 git clone https://github.com/YazanAlshareef/sql-mcp-server
 cd sql-mcp-server
