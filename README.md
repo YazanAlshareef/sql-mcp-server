@@ -41,6 +41,12 @@ flowchart LR
     D --> F[(bookstore.db copy)]
 ```
 
+## Diagrams
+
+- [Architecture](docs/diagrams/architecture.md): components and how they connect
+- [run_select flow](docs/diagrams/run-select-flow.md): one call through the guard, the read-only connection and the authorizer
+- [Data model](docs/diagrams/data-model.md): bookstore tables and foreign keys
+
 ## What it exposes
 
 | Kind | Name | What it does |
