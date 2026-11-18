@@ -21,6 +21,8 @@ ERROR: Error executing tool run_select: only one statement is allowed
 
 ## Quick start
 
+Requires Python 3.11 or newer (the 1 MB value cap uses `Connection.setlimit`, added in 3.11).
+
 ```bash
 git clone https://github.com/YazanAlshareef/sql-mcp-server
 cd sql-mcp-server
@@ -116,16 +118,12 @@ Set `BOOKSTORE_DB` to point at a different SQLite file.
 
 The official Python SDK (`mcp`, its `FastMCP` helper) does the protocol work, and `sqlite3` ships with Python, so the SDK is the only dependency. My other portfolio projects are Python too. I built it against `mcp` 1.30; `requirements.txt` allows 1.30 up to, but not including, 2.
 
-## How AI helped
-
-An AI coding assistant wrote the first draft of the code and tests from my brief. I chose the scope (read-only, SELECT only, which tools), ran everything, and reviewed it. [WALKTHROUGH.md](WALKTHROUGH.md) explains each file so I can defend it.
-
 ## What broke
 
 - **`describe_table` was denied by the authorizer.** `pragma_table_info(...)` counts as a `PRAGMA` action and I had denied all pragmas. Now only `table_info` and `foreign_key_list` are allowed.
 - **My first client script showed empty results.** FastMCP fills `structuredContent` only for typed returns, and several tools return plain dicts. The client now reads the text content.
 - **A `?` or `#` in the folder name broke the database URI.** I had built it with an f-string. It now uses `Path.as_uri()`, covered by a test.
-- **A review found two rough edges.** Raw SQLite errors (bad SQL, unknown table) leaked through the tools, and revenue ties came back in no fixed order. Both are fixed and each has a test that failed before the fix.
+- **Review found two rough edges.** Raw SQLite errors (bad SQL, unknown table) leaked through the tools, and revenue ties came back in no fixed order. Both are fixed and each has a test that failed before the fix.
 
 ## Limits
 
